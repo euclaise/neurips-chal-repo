@@ -31,7 +31,7 @@ prefix_map = {
 
 seq_len = 512
 
-def wiki_map_fn(row):
+def goodwiki_map_fn(row):
     prefix = f"[WIKI]{row['title']}\n"
     input_ids = tokenizer.encode(prefix, add_special_tokens=False, padding=False, truncation=False)
     labels += [-100]*len(input_ids)
