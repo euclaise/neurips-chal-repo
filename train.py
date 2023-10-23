@@ -1,11 +1,15 @@
 from transformers import AutoModelForCausalLM, AutoTokenizer, PreTrainedTokenizer
 from datasets import load_from_disk, load_dataset, concatenate_datasets
+import wandb
 import torch
 from torch import nn
 from typing import Optional, Dict, Sequence
 import random
 
 model_name = "mistralai/Mistral-7B-v0.1"
+
+#from patch3 import replace_stablelm_attn_with_flash_attn
+#replace_stablelm_attn_with_flash_attn()
 
 from SlimTrainer import *
 
@@ -17,6 +21,7 @@ tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 tokenizer.pad_token_id = tokenizer.eos_token_id
 
 ds = load_from_disk("ds")
+goodwiki = load_dataset("euirim/goodwiki").shuffle(seed=42).select(range(1000))
 
 prefix_map = {
     "human": "<|im_start|>user\n",
@@ -25,6 +30,20 @@ prefix_map = {
 }
 
 seq_len = 512
+
+def wiki_map_fn(row):
+    prefix = f"[WIKI]{row['title']}\n"
+    input_ids = tokenizer.encode(prefix, add_special_tokens=False, padding=False, truncation=False)
+    labels += [-100]*len(input_ids)
+    
+    toks = tokenizer.encode(row['markdown'] + tokenizer.eos_token, add_special_tokens=False, truncation=False)
+    input_ids += toks
+    labels += toks
+
+    input_ids = input_ids[:seq_len]
+    labels = labels[:seq_len]
+
+    return {'input_ids': torch.Tensor(input_ids).int(), 'labels': torch.Tensor(labels)}
 
 def ds_map_fn(row):
     input_ids = []
@@ -70,7 +89,9 @@ def ds_map_fn(row):
 
     return {'input_ids': torch.Tensor(input_ids).int(), 'labels': torch.Tensor(labels).int()}
 
-ds = ds.map(ds_map_fn, remove_columns=ds.column_names).shuffle(seed=32)
+goodwiki = ds.map(goodwiki_map_fn, remove_columns=goodwiki.column_names)
+ds = ds.map(ds_map_fn, remove_columns=ds.column_names)
+ds = concatenate_datasets([ds, goodwiki]).shuffle(seed=32)
 ds = ds.filter(lambda x: (torch.Tensor(x['labels']) != -100).sum().item() > 1)
 
 class DataCollatorForSupervisedDataset:
@@ -104,7 +125,7 @@ opt = Adalite(model=model)
 batch_sz=1
 epochs=3
 
-scheduler = CosineDecayWithWarmup(optimizer=opt, total_steps=(epochs*len(ds))/batch_sz, warmup_steps=epochs*(len(ds) / batch_sz)*0.2, max_lr=4e-6) # 4e-6
+scheduler = CosineDecayWithWarmup(optimizer=opt, total_steps=(epochs*len(ds))/batch_sz, warmup_steps=epochs*(len(ds) / batch_sz)*0.2, max_lr=3e-6) # 4e-6
 
 trainer = SlimTrainer(
     model=model,
@@ -113,6 +134,9 @@ trainer = SlimTrainer(
     epochs=epochs,
     data_collator=dc,
     batch_size=batch_sz,
+    wandb_entity="jpritsk",
+    wandb_project="Zen",
+    wandb_name="Zen 7B Human",
     train_data=ds,
     neft=True,
     mixce=True,
@@ -122,3 +146,6 @@ trainer.train()
 
 model.save_pretrained("Zen_7B_human")
 tokenizer.save_pretrained("Zen_7B_human")
+
+
+wandb.finish()
