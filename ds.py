@@ -8,9 +8,9 @@ gu = load_dataset("timdettmers/openassistant-guanaco")['train']
 mc = load_dataset("euclaise/MiniCoT")['train'].select(range(25000))
 mqa = load_dataset("euclaise/mqa", split='train').shuffle(seed=42).select(range(5000))
 st = load_dataset("euclaise/symtune_mini", split='train').shuffle(seed=42).select(range(500))
-gsm8k = load_dataset("euclaise/gsm8k_self_correct", split='train').shuffle(seed=42).select(range(500))
+gsm8k = load_dataset("euclaise/gsm8k_self_correct", split='train').shuffle(seed=42).select(range(100))
 mo = load_dataset("euclaise/mathoverflow-accepted", split='train').filter(lambda x: int(x['score']) > 50).shuffle(seed=42)
-lt = load_dataset("euclaise/LittleTown", split='train').shuffle(seed=42).select(range(500))
+lt = load_dataset("euclaise/LittleTown", split='train').shuffle(seed=42).select(range(100))
 
 def map_lu(row):
     return {
