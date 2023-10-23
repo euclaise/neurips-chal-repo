@@ -3,21 +3,21 @@ import random
 import re
 import pandas
 
-lu = load_dataset("pankajmathur/lima_unchained_v1")['train']
-gu = load_dataset("CheshireAI/guanaco-unchained")['train']
+lu = load_dataset("GAIR/lima")['train']
+gu = load_dataset("timdettmers/openassistant-guanaco")['train']
 mc = load_dataset("euclaise/MiniCoT")['train'].select(range(25000))
-mqa = load_dataset("euclaise/mqa", split='train').shuffle(seed=42).select(range(10000))
+mqa = load_dataset("euclaise/mqa", split='train').shuffle(seed=42).select(range(5000))
 st = load_dataset("euclaise/symtune_mini", split='train').shuffle(seed=42).select(range(500))
-gsm8k = load_dataset("euclaise/gsm8k_self_correct", split='train').shuffle(seed=42).select(range(1000))
+gsm8k = load_dataset("euclaise/gsm8k_self_correct", split='train').shuffle(seed=42).select(range(500))
 mo = load_dataset("euclaise/mathoverflow-accepted", split='train').filter(lambda x: int(x['score']) > 50).shuffle(seed=42)
-lt = load_dataset("euclaise/LittleTown", split='train').shuffle(seed=42).select(range(1500))
+lt = load_dataset("euclaise/LittleTown", split='train').shuffle(seed=42).select(range(500))
 
 def map_lu(row):
     return {
         'system': "",
         'conversations': [
-            {"from": "human", "value": row['instruction']},
-            {"from": "gpt", "value": row['response']}
+            {"from": "human", "value": row['conversations'][0]},
+            {"from": "gpt", "value": row['conversations'][1]}
         ]
     }
 lu = lu.map(map_lu, num_proc=8, remove_columns=lu.column_names)
@@ -122,10 +122,10 @@ def map_mo(row):
 mo = mo.map(map_mo, num_proc=8, remove_columns=mo.column_names)
 
 friendly = [
-    "Sure!",
-    "Sounds fun!",
-    "Alright",
-    "Sure, let's begin.",
+    "Sure! ",
+    "Sounds fun! ",
+    "Alright. ",
+    "Sure, let's begin. ",
 ]
 def map_lt(row):
     return {
