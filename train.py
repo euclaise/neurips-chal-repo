@@ -89,7 +89,7 @@ def ds_map_fn(row):
 
     return {'input_ids': torch.Tensor(input_ids).int(), 'labels': torch.Tensor(labels).int()}
 
-goodwiki = ds.map(goodwiki_map_fn, remove_columns=goodwiki.column_names)
+goodwiki = goodwiki.map(goodwiki_map_fn, remove_columns=goodwiki.column_names)
 ds = ds.map(ds_map_fn, remove_columns=ds.column_names)
 ds = concatenate_datasets([ds, goodwiki]).shuffle(seed=32)
 ds = ds.filter(lambda x: (torch.Tensor(x['labels']) != -100).sum().item() > 1)
