@@ -43,7 +43,7 @@ def goodwiki_map_fn(row):
     input_ids = input_ids[:seq_len]
     labels = labels[:seq_len]
 
-    return {'input_ids': torch.Tensor(input_ids).int(), 'labels': torch.Tensor(labels)}
+    return {'input_ids': torch.Tensor(input_ids).int(), 'labels': torch.Tensor(labels).int()}
 
 def ds_map_fn(row):
     input_ids = []
