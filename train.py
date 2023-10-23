@@ -21,7 +21,7 @@ tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 tokenizer.pad_token_id = tokenizer.eos_token_id
 
 ds = load_from_disk("ds")
-goodwiki = load_dataset("euirim/goodwiki").shuffle(seed=42).select(range(1000))
+goodwiki = load_dataset("euirim/goodwiki", split="train").shuffle(seed=42).select(range(1000))
 
 prefix_map = {
     "human": "<|im_start|>user\n",
