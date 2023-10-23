@@ -34,7 +34,7 @@ seq_len = 512
 def goodwiki_map_fn(row):
     prefix = f"[WIKI]{row['title']}\n"
     input_ids = tokenizer.encode(prefix, add_special_tokens=False, padding=False, truncation=False)
-    labels += [-100]*len(input_ids)
+    labels = [-100]*len(input_ids)
     
     toks = tokenizer.encode(row['markdown'] + tokenizer.eos_token, add_special_tokens=False, truncation=False)
     input_ids += toks
