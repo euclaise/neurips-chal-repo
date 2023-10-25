@@ -6,11 +6,10 @@ import pandas
 lu = load_dataset("GAIR/lima")['train']
 gu = load_dataset("timdettmers/openassistant-guanaco")['train']
 mc = load_dataset("euclaise/MiniCoT")['train'].select(range(25000))
-mqa = load_dataset("euclaise/mqa", split='train').shuffle(seed=42).select(range(3000))
+mqa = load_dataset("euclaise/mqa", split='train').shuffle(seed=42).select(range(2000))
 st = load_dataset("euclaise/symtune_mini", split='train').shuffle(seed=42).select(range(250))
-gsm8k = load_dataset("euclaise/gsm8k_self_correct", split='train').shuffle(seed=42).select(range(100))
 mo = load_dataset("euclaise/mathoverflow-accepted", split='train').filter(lambda x: int(x['score']) > 50).shuffle(seed=42)
-lt = load_dataset("euclaise/LittleTown", split='train').shuffle(seed=42).select(range(50))
+sc = load_dataset("euclaise/SciCoT", split='train').shuffle(seed=42).select(range(1000))
 
 def map_lu(row):
     return {
@@ -95,21 +94,6 @@ def map_st(row):
     }
 st = st.map(map_st, num_proc=8, remove_columns=st.column_names)
 
-def map_gsm8k(row):
-    input_ids =[]
-    labels = []
-    correct_end = row['correct_end'].split("\n#### ")
-
-    return {
-        'system': "",
-        'conversations': [
-            {"from": "human", "value": row['question']},
-            {"from": "gpt_rationale", "value": ""},
-            {"from": "gpt_transition", "value": row['mistake']},
-            {"from": "gpt_target", "value": f"\n{correct_end[0]}\n{random.choice(transitions)}{correct_end[1]}"}
-        ]
-    }
-gsm8k = gsm8k.map(map_gsm8k, num_proc=8, remove_columns=gsm8k.column_names)
 
 def map_mo(row):
     return {
@@ -121,25 +105,21 @@ def map_mo(row):
     }
 mo = mo.map(map_mo, num_proc=8, remove_columns=mo.column_names)
 
-friendly = [
-    "Sure! ",
-    "Sounds fun! ",
-    "Alright. ",
-    "Sure, let's begin. ",
-]
-def map_lt(row):
+def map_sc(row):
+    transition = random.choice(transitions)
     return {
         'system': "",
         'conversations': [
-            {"from": "human", "value": row['question']},
-            {"from": "gpt", "value": random.choice(friendly) + row['answer']}
+            {"from": "human", "value": row['prompt']},
+            {"from": "gpt_rationale", "value": f"{row['rationale']}"},
+            {"from": "gpt_transition", "value": f"\n{transition}"},
+            {"from": "gpt_target", "value": f"{row['target']}"}
         ]
     }
-lt = lt.map(map_lt, num_proc=8, remove_columns=lt.column_names)
+sc = sc.map(map_sc, num_proc=8, remove_columns=sc.column_names)
 
 
-
-ds = concatenate_datasets([lu, gu, mc, mqa, st, gsm8k, mo, lt]).shuffle(seed=42)
+ds = concatenate_datasets([lu, gu, mc, mqa, st, mo, sc]).shuffle(seed=42)
 
 
 print(ds)
